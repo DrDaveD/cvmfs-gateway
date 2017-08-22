@@ -370,7 +370,14 @@ p_submit_payload({LeaseToken, _Payload, _Digest, _HeaderSize} = SubmissionData) 
                  {ok, Public} ->
                      case cvmfs_lease:get_lease_secret(Public) of
                          {ok, Secret} ->
-                             cvmfs_receiver:submit_payload(SubmissionData, Secret);
+                             case cvmfs_receiver:submit_payload(SubmissionData, Secret) of
+                                 {error, Reason2} ->
+                                     lager:error("Error submitting payload. Current lease with be cancelled"),
+                                     cvmfs_lease:end_lease(Public),
+                                     {error, Reason2};
+                                 Result2 ->
+                                     Result2
+                             end;
                          {error, Reason} ->
                              {error, Reason}
                      end;
